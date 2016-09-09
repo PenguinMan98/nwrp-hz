@@ -1,5 +1,7 @@
-const horizon = new Horizon();
-const messages = horizon('messages');
+const horizon = new Horizon({
+});
+const posts = horizon('posts');
+const users = horizon('users');
 
 const app = new Vue({
   el: '#app',
@@ -45,17 +47,23 @@ const app = new Vue({
           </template>
           <template v-else>
             <ul class="nav navbar-nav navbar-right">
-              <li class="navbar-right"><a href="#login">Log In</a></li>
+              <li class="navbar-right"><a id="login-button" href="#login" @click="showLoginForm">Log In</a></li>
             </ul>
           </template>
         </div><!--/.nav-collapse -->
       </div>
     </nav>
 
+    <div id="login-form">
+      <label for="login-username">Username</label><input type="text" id="login-username" name="login-username" /><br>
+      <label for="login-password">Password</label><input type="password" id="login-password" name="login-password" @keyup.enter="logMeIn" /><br>
+      <button @click="logMeIn" @keyup.space="logMeIn">Log In</button>
+    </div>
+
     <div>
       <div id="chatMessages">
         <ul>
-          <li v-for="message in messages">
+          <li v-for="message in posts">
             {{ message.text }}
           </li>
         </ul>
@@ -67,17 +75,20 @@ const app = new Vue({
   `,
   data: {
     // Our dynamic list of chat messages
-    messages: [],
-    userAuthenticated: false
+    posts: [],
+    userAuthenticated: false,
+    user: null,
+    characterName: ''
   },
   created() {
     // Subscribe to messages
-    messages.order('datetime', 'descending').limit(10).watch()
-    .subscribe(allMessages => {
+    // does not require authentication to watch
+    posts.order('datetime', 'descending').limit(10).watch()
+    .subscribe(allPosts => {
         // Make a copy of the array and reverse it, so newest images push into
         // the messages feed from the bottom of the rendered list. (Otherwise
         // they appear initially at the top and move down)
-        this.messages = [...allMessages].reverse()
+        this.posts = [...allPosts].reverse()
       },
       // When error occurs on server
       error => console.log(error)
@@ -85,7 +96,9 @@ const app = new Vue({
 
     // Triggers when client successfully connects to server
     horizon.onReady().subscribe(
-      () => console.log("Connected to Horizon server")
+      () => {
+        console.log("Connected to Horizon server");
+      }
     )
 
     // Triggers when disconnected from server
@@ -95,7 +108,7 @@ const app = new Vue({
   },
   methods: {
     sendMessage(event) {
-      messages.store({
+      posts.store({
         text: event.target.value, // Current value inside <input> tag
         datetime: new Date() // Warning clock skew!
       }).subscribe(
@@ -106,6 +119,23 @@ const app = new Vue({
         )
         // Clear input for next message
         event.target.value = ''
+    },
+    showLoginForm(event) {
+      console.log('login clicked', event);
+      var loginForm = $('#login-form');
+      var loginButton = $('#login-button');
+      var buttonPosition = loginButton[0].getBoundingClientRect();
+
+      loginForm.css({
+        'top': (buttonPosition.bottom + 3) +'px',
+        'right': '0px'
+      }).show();
+    },
+    logMeIn(event) {
+      var username = $('#login-username').val();
+      var password = $('#login-password').val();
+      console.log('loggin in', username, password);
+
     }
   }
 });

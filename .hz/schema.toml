@@ -1,0 +1,18 @@
+[collections.posts]
+[[collections.posts.indexes]]
+fields = [['creator']]
+
+[groups.default.rules.read_public_posts]
+template = "collection('posts').findAll({postType: 1})"
+
+[groups.authenticated.rules.read_own_posts]
+template = "collection('posts').findAll({creator: userId()})"
+
+[groups.authenticated.rules.store_post]
+template = "collection('posts').store({creator: userId(), text: any(), postType: any()})"
+validator = """
+  (context, oldValue, newValue) => {
+    return typeof newValue.text === 'string'
+      && typeof newValue.postType === 'number';
+  }
+"""
